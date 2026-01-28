@@ -138,11 +138,40 @@ export class SmsMasivos implements INodeType {
                         method: 'GET',
                         uri: 'http://servicio.smsmasivos.com.ar/enviar_sms.asp',
                         qs,
-                        json: true,
+                        encoding: null, // Return buffer to handle encoding manually
+                        json: false,    // We will parse manually after decoding
                     };
 
-                    const responseData = await this.helpers.request(options);
-                    returnData.push({ json: responseData });
+                    const responseBuffer = await this.helpers.request(options) as Buffer;
+
+                    // Decode ISO-8859-1 (Latin-1) to UTF-8
+                    const decoder = new TextDecoder('latin1');
+                    const responseString = decoder.decode(responseBuffer).trim();
+
+                    let finalData: IDataObject = {};
+
+                    // Check if response seems to be the standard "OK" or "1"
+                    // The API might return "OK" or "1" for success, sometimes followed by newlines which we trimmed.
+                    const isSuccess = /OK/i.test(responseString) || responseString === '1' || responseString === 'true';
+
+                    if (isSuccess) {
+                        finalData = {
+                            status: true,
+                            message: responseString,
+                            timestamp: new Date().toISOString()
+                        };
+                    } else {
+                        // If it's not a simple OK/1, it might be an error message or other data.
+                        // We treat it as an error/message.
+                        finalData = {
+                            status: false,
+                            message: responseString,
+                            timestamp: new Date().toISOString()
+                        };
+                    }
+
+
+                    returnData.push({ json: finalData });
                 }
             } catch (error) {
                 if (this.continueOnFail()) {

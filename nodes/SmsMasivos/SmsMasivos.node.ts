@@ -69,6 +69,12 @@ export class SmsMasivos implements INodeType {
                         description: 'Send multiple SMS in a single request',
                         action: 'Send Bulk SMS',
                     },
+                    {
+                        name: 'Get Inbound SMS',
+                        value: 'getReceivedMessages',
+                        description: 'Get received SMS messages',
+                        action: 'Get inbound SMS',
+                    },
                 ],
                 default: 'send',
             },
@@ -124,6 +130,10 @@ export class SmsMasivos implements INodeType {
                         resource: [
                             'sms',
                         ],
+                        operation: [
+                            'send',
+                            'sendBulk',
+                        ],
                     },
                 },
                 description: 'Phone number to send the message to',
@@ -139,6 +149,10 @@ export class SmsMasivos implements INodeType {
                         resource: [
                             'sms',
                         ],
+                        operation: [
+                            'send',
+                            'sendBulk',
+                        ],
                     },
                 },
                 description: 'Message to send (max 160 characters)',
@@ -152,6 +166,10 @@ export class SmsMasivos implements INodeType {
                     show: {
                         resource: [
                             'sms',
+                        ],
+                        operation: [
+                            'send',
+                            'sendBulk',
                         ],
                     },
                 },
@@ -167,6 +185,10 @@ export class SmsMasivos implements INodeType {
                         resource: [
                             'sms',
                         ],
+                        operation: [
+                            'send',
+                            'sendBulk',
+                        ],
                     },
                 },
                 description: 'Internal alphanumeric ID (max 50 chars)',
@@ -181,9 +203,81 @@ export class SmsMasivos implements INodeType {
                         resource: [
                             'sms',
                         ],
+                        operation: [
+                            'send',
+                        ],
                     },
                 },
+
                 description: 'Date and time to send the message (GMT -3). If not set, sends immediately.',
+            },
+            {
+                displayName: 'Source Number',
+                name: 'sourceNumber',
+                type: 'string',
+                default: '',
+                displayOptions: {
+                    show: {
+                        resource: [
+                            'sms',
+                        ],
+                        operation: [
+                            'getReceivedMessages',
+                        ],
+                    },
+                },
+                description: 'Filter messages by origin number',
+            },
+            {
+                displayName: 'Only Unread',
+                name: 'onlyUnread',
+                type: 'boolean',
+                default: false,
+                displayOptions: {
+                    show: {
+                        resource: [
+                            'sms',
+                        ],
+                        operation: [
+                            'getReceivedMessages',
+                        ],
+                    },
+                },
+                description: 'If set, returns only unread messages',
+            },
+            {
+                displayName: 'Mark as Read',
+                name: 'markAsRead',
+                type: 'boolean',
+                default: false,
+                displayOptions: {
+                    show: {
+                        resource: [
+                            'sms',
+                        ],
+                        operation: [
+                            'getReceivedMessages',
+                        ],
+                    },
+                },
+                description: 'If set, marks retrieved messages as read',
+            },
+             {
+                displayName: 'Include Internal ID',
+                name: 'includeInternalId',
+                type: 'boolean',
+                default: false,
+                displayOptions: {
+                    show: {
+                        resource: [
+                            'sms',
+                        ],
+                        operation: [
+                            'getReceivedMessages',
+                        ],
+                    },
+                },
+                description: 'If set, includes the internal ID in the response if available',
             },
             {
                 displayName: 'Check By',
@@ -286,6 +380,7 @@ export class SmsMasivos implements INodeType {
                 },
                 description: 'If set, marks retrieved statuses as read',
             },
+
         ],
     };
 
@@ -384,6 +479,75 @@ export class SmsMasivos implements INodeType {
 
                 // For sendBulk, we might return a single item with the result
                 return [[{ json: finalData }]];
+
+            } catch (error) {
+                if (this.continueOnFail()) {
+                    return [[{ json: { error: error.message } }]];
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+
+
+        if (resource === 'sms' && operation === 'getReceivedMessages') {
+            try {
+                const sourceNumber = this.getNodeParameter('sourceNumber', 0) as string;
+                const onlyUnread = this.getNodeParameter('onlyUnread', 0) as boolean;
+                const markAsRead = this.getNodeParameter('markAsRead', 0) as boolean;
+                const includeInternalId = this.getNodeParameter('includeInternalId', 0) as boolean;
+                const credentials = await this.getCredentials('smsMasivosApi');
+
+                const qs: IDataObject = {
+                    apikey: credentials.apiKey,
+                };
+
+                if (sourceNumber) {
+                    qs.origen = sourceNumber;
+                }
+
+                if (onlyUnread) qs.solonoleidos = 1;
+                if (markAsRead) qs.marcarcomoleidos = 1;
+                if (includeInternalId) qs.traeridinterno = 1;
+
+                const options: IDataObject = {
+                    method: 'GET',
+                    uri: 'http://servicio.smsmasivos.com.ar/obtener_sms_entrada.asp',
+                    qs,
+                    encoding: null,
+                    json: false,
+                };
+
+                const responseBuffer = await this.helpers.request(options) as Buffer;
+                const decoder = new TextDecoder('latin1');
+                const responseString = decoder.decode(responseBuffer).trim();
+
+                const lines = responseString.split(/\r?\n/).filter(line => line.trim());
+                const returnItems: INodeExecutionData[] = [];
+
+                for (const line of lines) {
+                    const parts = line.split('\t');
+                    // Format: NUMERO {tab} TEXTO {tab} FECHA {tab} ID SMS MASIVOS {enter}
+                    // Or with ID: ... {tab} ID SMS MASIVOS {tab} ID INTERNO {enter}
+                    
+                    if (parts.length >= 4) {
+                         const item: IDataObject = {
+                             numero: parts[0],
+                             texto: parts[1],
+                             fecha: parts[2],
+                             idSmsMasivos: parts[3],
+                         };
+
+                         if (parts.length >= 5 && includeInternalId) {
+                             item.idInterno = parts[4];
+                         }
+
+                         returnItems.push({ json: item });
+                    }
+                }
+
+                return [returnItems];
 
             } catch (error) {
                 if (this.continueOnFail()) {

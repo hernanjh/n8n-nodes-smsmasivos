@@ -202,18 +202,44 @@ export class SmsMasivos implements INodeType {
                     let texto = this.getNodeParameter('texto', j) as string;
                     let idinterno = this.getNodeParameter('idinterno', j) as string;
 
-                    // Default idinterno to tos if empty, as per docs suggestion or logic
-                    if (!idinterno) {
-                        idinterno = tos;
-                    }
-
                     // Sanitize to verify no tabs or newlines break the format
                     // Docs say: "El texto puede contener comas" if separator is tab.
-                    // We must ensure text doesn't contain tabs or newlines.
-                    texto = texto.replace(/\t/g, ' ').replace(/\n/g, ' ').replace(/\r/g, '');
-                    idinterno = idinterno.replace(/\t/g, ' ').replace(/\n/g, ' ').replace(/\r/g, '');
+                    // Split numbers, text, and ids by comma, semicolon, or newline
+                    // Helper to split and cleanup
+                    const splitParam = (param: string) => param.split(/(?<!\\)[,\r\n;]+/).map(s => s.trim().replace(/\\,/g, ',')).filter(s => s !== ''); 
+                    
+                    // We need to handle sanitized text carefully. The sanitize in previous step removed newlines entirely.
+                    // Here we want to split by newlines/commas first, THEN sanitize the content of each message.
 
-                    bloque += `${idinterno}\t${tos}\t${texto}\n`;
+                    const tosList = splitParam(tos);
+                    const textoList = splitParam(texto);
+                    const idList = splitParam(idinterno);
+
+                    // Determine max length to iterate. Usually driven by tosList, but possibly others.
+                    // Standard logic: 
+                    // 1. If tos has N items, we expect N items in others OR 1 item (broadcast).
+                    // 2. We will iterate based on tosList.length.
+
+                    if (tosList.length > 0) {
+                        for (let k = 0; k < tosList.length; k++) {
+                            const num = tosList[k];
+                            
+                            // Get corresponding text or fallback to the first/only one
+                            let rawText = (k < textoList.length) ? textoList[k] : (textoList.length > 0 ? textoList[0] : '');
+                            // Sanitize text for the API (remove tabs/newlines within the message)
+                            const cleanText = rawText.replace(/\t/g, ' ').replace(/\n/g, ' ').replace(/\r/g, '');
+
+                            // Get corresponding ID or fallback
+                            let rawId = (k < idList.length) ? idList[k] : (idList.length > 0 ? idList[0] : '');
+                            // Default ID to number if empty
+                            if (!rawId) {
+                                rawId = num;
+                            }
+                            const cleanId = rawId.replace(/\t/g, ' ').replace(/\n/g, ' ').replace(/\r/g, '');
+
+                            bloque += `${cleanId}\t${num}\t${cleanText}\n`;
+                        }
+                    }
                 }
 
                 const formData: IDataObject = {

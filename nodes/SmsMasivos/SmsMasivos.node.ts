@@ -103,6 +103,12 @@ export class SmsMasivos implements INodeType {
                         description: 'Get current server date',
                         action: 'Get server date',
                     },
+                    {
+                        name: 'Check Bulk Status',
+                        value: 'checkBulkStatus',
+                        description: 'Check status of bulk SMS transmission',
+                        action: 'Check bulk status',
+                    },
                 ],
                 default: 'getBalance',
             },
@@ -178,6 +184,107 @@ export class SmsMasivos implements INodeType {
                     },
                 },
                 description: 'Date and time to send the message (GMT -3). If not set, sends immediately.',
+            },
+            {
+                displayName: 'Check By',
+                name: 'checkBy',
+                type: 'options',
+                options: [
+                    {
+                        name: 'Internal ID',
+                        value: 'idInterno',
+                    },
+                    {
+                        name: 'Date',
+                        value: 'date',
+                    },
+                ],
+                default: 'idInterno',
+                displayOptions: {
+                    show: {
+                        resource: [
+                            'utility',
+                        ],
+                        operation: [
+                            'checkBulkStatus',
+                        ],
+                    },
+                },
+                description: 'Choose how to identify the bulk batch',
+            },
+            {
+                displayName: 'Internal ID',
+                name: 'checkId',
+                type: 'string',
+                default: '',
+                displayOptions: {
+                    show: {
+                        resource: [
+                            'utility',
+                        ],
+                        operation: [
+                            'checkBulkStatus',
+                        ],
+                        checkBy: [
+                            'idInterno',
+                        ],
+                    },
+                },
+                description: 'Internal alphanumeric ID of the batch',
+            },
+            {
+                displayName: 'Date',
+                name: 'bulkDate',
+                type: 'dateTime',
+                default: '',
+                displayOptions: {
+                    show: {
+                        resource: [
+                            'utility',
+                        ],
+                        operation: [
+                            'checkBulkStatus',
+                        ],
+                        checkBy: [
+                            'date',
+                        ],
+                    },
+                },
+                description: 'Date of the batch processing',
+            },
+            {
+                displayName: 'Only Unread',
+                name: 'onlyUnread',
+                type: 'boolean',
+                default: false,
+                displayOptions: {
+                    show: {
+                        resource: [
+                            'utility',
+                        ],
+                        operation: [
+                            'checkBulkStatus',
+                        ],
+                    },
+                },
+                description: 'If set, returns only unread status updates',
+            },
+            {
+                displayName: 'Mark as Read',
+                name: 'markAsRead',
+                type: 'boolean',
+                default: false,
+                displayOptions: {
+                    show: {
+                        resource: [
+                            'utility',
+                        ],
+                        operation: [
+                            'checkBulkStatus',
+                        ],
+                    },
+                },
+                description: 'If set, marks retrieved statuses as read',
             },
         ],
     };
@@ -337,6 +444,82 @@ export class SmsMasivos implements INodeType {
                             serverDate: response,
                         }
                     }]];
+                } else if (operation === 'checkBulkStatus') {
+                    const checkBy = this.getNodeParameter('checkBy', 0) as string;
+                    const onlyUnread = this.getNodeParameter('onlyUnread', 0) as boolean;
+                    const markAsRead = this.getNodeParameter('markAsRead', 0) as boolean;
+
+                    const qs: IDataObject = {
+                        apikey: credentials.apiKey,
+                    };
+
+                    if (checkBy === 'idInterno') {
+                        qs.idinterno = this.getNodeParameter('checkId', 0) as string;
+                    } else if (checkBy === 'date') {
+                         const bulkDate = this.getNodeParameter('bulkDate', 0) as string;
+                         if (bulkDate) {
+                             const dateObj = new Date(bulkDate);
+                             // Format: YYYYMMDDHHNNSS (NN = minutes)
+                             const pad = (n: number) => n.toString().padStart(2, '0');
+                             const formattedDate = dateObj.getFullYear().toString() +
+                                                 pad(dateObj.getMonth() + 1) +
+                                                 pad(dateObj.getDate()) +
+                                                 pad(dateObj.getHours()) +
+                                                 pad(dateObj.getMinutes()) +
+                                                 pad(dateObj.getSeconds());
+                             qs.fecha = formattedDate;
+                         }
+                    }
+
+                    if (onlyUnread) qs.solonoleidos = 1;
+                    if (markAsRead) qs.marcarcomoleidos = 1;
+
+                    const options: IDataObject = {
+                        method: 'GET',
+                        uri: 'http://servicio.smsmasivos.com.ar/obtener_respuestaapi_bloque.asp',
+                        qs,
+                        encoding: null, 
+                        json: false,
+                    };
+
+                    const responseBuffer = await this.helpers.request(options) as Buffer;
+                    const decoder = new TextDecoder('latin1');
+                    const responseString = decoder.decode(responseBuffer).trim();
+
+                    // Parse response
+                    // Format: IdInterno {tab} Fecha {tab} Respuesta {enter}
+                    // Or "PENDIENTE"
+                    // Or Error message
+
+                     if (responseString === 'PENDIENTE') {
+                         return [[{ json: { status: 'PENDIENTE' } }]];
+                     }
+                    
+                    const lines = responseString.split(/\r?\n/).filter(line => line.trim());
+                    const returnItems: INodeExecutionData[] = [];
+
+                    for (const line of lines) {
+                        const parts = line.split('\t');
+                        if (parts.length >= 3) {
+                             returnItems.push({
+                                 json: {
+                                     idInterno: parts[0],
+                                     fecha: parts[1],
+                                     respuesta: parts[2],
+                                     originalLine: line
+                                 }
+                             });
+                        } else {
+                            // Could be an error message or unexpected format
+                             returnItems.push({
+                                 json: {
+                                     message: line
+                                 }
+                             });
+                        }
+                    }
+
+                    return [returnItems];
                 }
             } catch (error) {
                  if (this.continueOnFail()) {

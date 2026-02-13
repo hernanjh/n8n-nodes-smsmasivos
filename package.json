@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-smsmasivos",
-	"version": "0.1.7",
+	"version": "0.1.8",
 	"description": "n8n node for sending SMS via SMS Masivos",
 	"license": "MIT",
 	"homepage": "",
@@ -9,7 +9,7 @@
 	],
 	"author": {
 		"name": "Hernan",
-		"email": ""
+		"email": "hernanjh@gmail.com"
 	},
 	"repository": {
 		"type": "git",

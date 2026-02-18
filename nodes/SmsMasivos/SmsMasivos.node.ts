@@ -467,8 +467,13 @@ export class SmsMasivos implements INodeType {
                 const responseBuffer = await this.helpers.httpRequest(options) as Buffer;
 
                 // Decode ISO-8859-1 (Latin-1) to UTF-8
-                const decoder = new TextDecoder('latin1');
-                const responseString = decoder.decode(responseBuffer).trim();
+                let responseString = '';
+                if (Buffer.isBuffer(responseBuffer)) {
+                    const decoder = new TextDecoder('latin1');
+                    responseString = decoder.decode(responseBuffer).trim();
+                } else {
+                    responseString = (responseBuffer as unknown as string).trim();
+                }
 
                 const isSuccess = /OK/i.test(responseString);
 
@@ -521,8 +526,14 @@ export class SmsMasivos implements INodeType {
                 };
 
                 const responseBuffer = await this.helpers.httpRequest(options) as Buffer;
-                const decoder = new TextDecoder('latin1');
-                const responseString = decoder.decode(responseBuffer).trim();
+                
+                let responseString = '';
+                if (Buffer.isBuffer(responseBuffer)) {
+                    const decoder = new TextDecoder('latin1');
+                    responseString = decoder.decode(responseBuffer).trim();
+                } else {
+                    responseString = (responseBuffer as unknown as string).trim();
+                }
 
                 const lines = responseString.split(/\r?\n/).filter(line => line.trim());
                 const returnItems: INodeExecutionData[] = [];
@@ -648,8 +659,14 @@ export class SmsMasivos implements INodeType {
                     };
 
                     const responseBuffer = await this.helpers.httpRequest(options) as Buffer;
-                    const decoder = new TextDecoder('latin1');
-                    const responseString = decoder.decode(responseBuffer).trim();
+                    
+                    let responseString = '';
+                    if (Buffer.isBuffer(responseBuffer)) {
+                        const decoder = new TextDecoder('latin1');
+                        responseString = decoder.decode(responseBuffer).trim();
+                    } else {
+                        responseString = (responseBuffer as unknown as string).trim();
+                    }
 
                     // Parse response
                     // Format: IdInterno {tab} Fecha {tab} Respuesta {enter}
@@ -739,9 +756,14 @@ export class SmsMasivos implements INodeType {
 
                     const responseBuffer = await this.helpers.httpRequest(options) as Buffer;
 
-                    // Decode ISO-8859-1 (Latin-1) to UTF-8
-                    const decoder = new TextDecoder('latin1');
-                    const responseString = decoder.decode(responseBuffer).trim();
+                    let responseString = '';
+
+                    if (Buffer.isBuffer(responseBuffer)) {
+                        const decoder = new TextDecoder('latin1');
+                        responseString = decoder.decode(responseBuffer).trim();
+                    } else {
+                        responseString = (responseBuffer as unknown as string).trim();
+                    }
 
                     let finalData: IDataObject = {};
 

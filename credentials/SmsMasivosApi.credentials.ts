@@ -1,6 +1,7 @@
 import {
 	ICredentialType,
 	INodeProperties,
+	ICredentialTestRequest,
 } from 'n8n-workflow';
 
 export class SmsMasivosApi implements ICredentialType {
@@ -18,4 +19,14 @@ export class SmsMasivosApi implements ICredentialType {
 			default: '',
 		},
 	];
+	
+	test: ICredentialTestRequest = {
+		request: {
+			baseURL: 'http://servicio.smsmasivos.com.ar',
+			url: '/obtener_saldo.asp',
+			qs: {
+				apikey: '={{$credentials.apiKey}}',
+			},
+		},
+	};
 }

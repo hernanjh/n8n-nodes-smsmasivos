@@ -12,6 +12,7 @@ export class SmsMasivos implements INodeType {
         name: 'smsMasivos',
         icon: 'file:smsmasivos.svg',
         group: ['transform'],
+        usableAsTool: true,
         version: 1,
         subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
         description: 'Send SMS via SMS Masivos',
@@ -67,7 +68,7 @@ export class SmsMasivos implements INodeType {
                         name: 'Send Bulk',
                         value: 'sendBulk',
                         description: 'Send multiple SMS in a single request',
-                        action: 'Send Bulk SMS',
+                        action: 'Send bulk SMS',
                     },
                     {
                         name: 'Get Inbound SMS',
@@ -173,7 +174,7 @@ export class SmsMasivos implements INodeType {
                         ],
                     },
                 },
-                description: 'If set, data is validated but message is not sent',
+                description: 'Whether to validate data without sending message',
             },
             {
                 displayName: 'Internal ID',
@@ -243,7 +244,7 @@ export class SmsMasivos implements INodeType {
                         ],
                     },
                 },
-                description: 'If set, returns only unread messages',
+                description: 'Whether to return only unread messages',
             },
             {
                 displayName: 'Mark as Read',
@@ -260,7 +261,7 @@ export class SmsMasivos implements INodeType {
                         ],
                     },
                 },
-                description: 'If set, marks retrieved messages as read',
+                description: 'Whether to mark retrieved messages as read',
             },
              {
                 displayName: 'Include Internal ID',
@@ -277,7 +278,7 @@ export class SmsMasivos implements INodeType {
                         ],
                     },
                 },
-                description: 'If set, includes the internal ID in the response if available',
+                description: 'Whether to include the internal ID in the response if available',
             },
             {
                 displayName: 'Check By',
@@ -361,7 +362,7 @@ export class SmsMasivos implements INodeType {
                         ],
                     },
                 },
-                description: 'If set, returns only unread status updates',
+                description: 'Whether to return only unread status updates',
             },
             {
                 displayName: 'Mark as Read',
@@ -378,7 +379,7 @@ export class SmsMasivos implements INodeType {
                         ],
                     },
                 },
-                description: 'If set, marks retrieved statuses as read',
+                description: 'Whether to mark retrieved statuses as read',
             },
 
         ],
@@ -401,8 +402,8 @@ export class SmsMasivos implements INodeType {
                 // Iterate over all items to build the block
                 for (let j = 0; j < items.length; j++) {
                     const tos = this.getNodeParameter('tos', j) as string;
-                    let texto = this.getNodeParameter('texto', j) as string;
-                    let idinterno = this.getNodeParameter('idinterno', j) as string;
+                    const texto = this.getNodeParameter('texto', j) as string;
+                    const idinterno = this.getNodeParameter('idinterno', j) as string;
 
                     // Sanitize to verify no tabs or newlines break the format
                     // Docs say: "El texto puede contener comas" if separator is tab.
@@ -427,7 +428,7 @@ export class SmsMasivos implements INodeType {
                             const num = tosList[k];
                             
                             // Get corresponding text or fallback to the first/only one
-                            let rawText = (k < textoList.length) ? textoList[k] : (textoList.length > 0 ? textoList[0] : '');
+                            const rawText = (k < textoList.length) ? textoList[k] : (textoList.length > 0 ? textoList[0] : '');
                             // Sanitize text for the API (remove tabs/newlines within the message)
                             const cleanText = rawText.replace(/\t/g, ' ').replace(/\n/g, ' ').replace(/\r/g, '');
 
@@ -455,15 +456,15 @@ export class SmsMasivos implements INodeType {
                     formData.test = 1;
                 }
 
-                const options: IDataObject = {
-                    method: 'POST',
-                    uri: 'http://servicio.smsmasivos.com.ar/enviar_sms_bloque.asp',
+                const options = {
+                    method: 'POST' as const,
+                    url: 'http://servicio.smsmasivos.com.ar/enviar_sms_bloque.asp',
                     form: formData,
-                    encoding: null, // Return buffer to handle encoding manually
                     json: false,
+                    responseFormat: 'buffer', // Return buffer to handle encoding manually
                 };
 
-                const responseBuffer = await this.helpers.request(options) as Buffer;
+                const responseBuffer = await this.helpers.httpRequest(options) as Buffer;
 
                 // Decode ISO-8859-1 (Latin-1) to UTF-8
                 const decoder = new TextDecoder('latin1');
@@ -511,15 +512,15 @@ export class SmsMasivos implements INodeType {
                 if (markAsRead) qs.marcarcomoleidos = 1;
                 if (includeInternalId) qs.traeridinterno = 1;
 
-                const options: IDataObject = {
-                    method: 'GET',
-                    uri: 'http://servicio.smsmasivos.com.ar/obtener_sms_entrada.asp',
+                const options = {
+                    method: 'GET' as const,
+                    url: 'http://servicio.smsmasivos.com.ar/obtener_sms_entrada.asp',
                     qs,
-                    encoding: null,
                     json: false,
+                    responseFormat: 'buffer',
                 };
 
-                const responseBuffer = await this.helpers.request(options) as Buffer;
+                const responseBuffer = await this.helpers.httpRequest(options) as Buffer;
                 const decoder = new TextDecoder('latin1');
                 const responseString = decoder.decode(responseBuffer).trim();
 
@@ -573,16 +574,16 @@ export class SmsMasivos implements INodeType {
                         resultMethod = 'sentCount';
                     }
 
-                    const options: IDataObject = {
-                        method: 'GET',
-                        uri,
+                    const options = {
+                        method: 'GET' as const,
+                        url: uri,
                         qs: {
                             apikey: credentials.apiKey,
                         },
                         json: false,
                     };
 
-                    const response = await this.helpers.request(options) as string;
+                    const response = await this.helpers.httpRequest(options) as string;
                     // Response is an integer in string format, e.g. "100"
 
                     return [[{
@@ -591,16 +592,16 @@ export class SmsMasivos implements INodeType {
                         }
                     }]];
                 } else if (operation === 'getServerDate') {
-                     const options: IDataObject = {
-                        method: 'GET',
-                        uri: 'http://servicio.smsmasivos.com.ar/get_fecha.asp',
+                     const options = {
+                        method: 'GET' as const,
+                        url: 'http://servicio.smsmasivos.com.ar/get_fecha.asp',
                         qs: {
                             iso: 1,
                         },
                         json: false,
                     };
 
-                    const response = await this.helpers.request(options) as string;
+                    const response = await this.helpers.httpRequest(options) as string;
                      // Response is YYYY-MM-DD HH:mm:SS
 
                     return [[{
@@ -638,15 +639,15 @@ export class SmsMasivos implements INodeType {
                     if (onlyUnread) qs.solonoleidos = 1;
                     if (markAsRead) qs.marcarcomoleidos = 1;
 
-                    const options: IDataObject = {
-                        method: 'GET',
-                        uri: 'http://servicio.smsmasivos.com.ar/obtener_respuestaapi_bloque.asp',
+                    const options = {
+                        method: 'GET' as const,
+                        url: 'http://servicio.smsmasivos.com.ar/obtener_respuestaapi_bloque.asp',
                         qs,
-                        encoding: null, 
-                        json: false,
+                        json: false, 
+                        responseFormat: 'buffer',
                     };
 
-                    const responseBuffer = await this.helpers.request(options) as Buffer;
+                    const responseBuffer = await this.helpers.httpRequest(options) as Buffer;
                     const decoder = new TextDecoder('latin1');
                     const responseString = decoder.decode(responseBuffer).trim();
 
@@ -728,15 +729,15 @@ export class SmsMasivos implements INodeType {
                         qs.fechadesde = dateObj.toISOString().replace('T', ' ').substring(0, 19);
                     }
 
-                    const options: IDataObject = {
-                        method: 'GET',
-                        uri: 'http://servicio.smsmasivos.com.ar/enviar_sms.asp',
+                    const options = {
+                        method: 'GET' as const,
+                        url: 'http://servicio.smsmasivos.com.ar/enviar_sms.asp',
                         qs,
-                        encoding: null, // Return buffer to handle encoding manually
                         json: false,    // We will parse manually after decoding
+                        responseFormat: 'buffer', // Return buffer to handle encoding manually
                     };
 
-                    const responseBuffer = await this.helpers.request(options) as Buffer;
+                    const responseBuffer = await this.helpers.httpRequest(options) as Buffer;
 
                     // Decode ISO-8859-1 (Latin-1) to UTF-8
                     const decoder = new TextDecoder('latin1');

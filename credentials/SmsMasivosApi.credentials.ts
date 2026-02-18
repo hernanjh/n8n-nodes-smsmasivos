@@ -22,7 +22,7 @@ export class SmsMasivosApi implements ICredentialType {
 	
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: 'http://servicio.smsmasivos.com.ar',
+			baseURL: 'https://servicio.smsmasivos.com.ar',
 			url: '/obtener_saldo.asp',
 			qs: {
 				apikey: '={{$credentials.apiKey}}',

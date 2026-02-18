@@ -458,7 +458,7 @@ export class SmsMasivos implements INodeType {
 
                 const options = {
                     method: 'POST' as const,
-                    url: 'http://servicio.smsmasivos.com.ar/enviar_sms_bloque.asp',
+                    url: 'https://servicio.smsmasivos.com.ar/enviar_sms_bloque.asp',
                     form: formData,
                     json: false,
                     responseFormat: 'buffer', // Return buffer to handle encoding manually
@@ -484,7 +484,12 @@ export class SmsMasivos implements INodeType {
                 };
 
                 // For sendBulk, we might return a single item with the result
-                return [[{ json: finalData }]];
+                return [[{
+                    json: finalData,
+                    pairedItem: {
+                        item: 0,
+                    },
+                }]];
 
             } catch (error) {
                 if (this.continueOnFail()) {
@@ -519,7 +524,7 @@ export class SmsMasivos implements INodeType {
 
                 const options = {
                     method: 'GET' as const,
-                    url: 'http://servicio.smsmasivos.com.ar/obtener_sms_entrada.asp',
+                    url: 'https://servicio.smsmasivos.com.ar/obtener_sms_entrada.asp',
                     qs,
                     json: false,
                     responseFormat: 'buffer',
@@ -578,10 +583,10 @@ export class SmsMasivos implements INodeType {
                     let resultMethod = '';
 
                     if (operation === 'getBalance') {
-                        uri = 'http://servicio.smsmasivos.com.ar/obtener_saldo.asp';
+                        uri = 'https://servicio.smsmasivos.com.ar/obtener_saldo.asp';
                         resultMethod = 'balance';
                     } else if (operation === 'getSentCount') {
-                        uri = 'http://servicio.smsmasivos.com.ar/obtener_envios.asp';
+                        uri = 'https://servicio.smsmasivos.com.ar/obtener_envios.asp';
                         resultMethod = 'sentCount';
                     }
 
@@ -605,7 +610,7 @@ export class SmsMasivos implements INodeType {
                 } else if (operation === 'getServerDate') {
                      const options = {
                         method: 'GET' as const,
-                        url: 'http://servicio.smsmasivos.com.ar/get_fecha.asp',
+                        url: 'https://servicio.smsmasivos.com.ar/get_fecha.asp',
                         qs: {
                             iso: 1,
                         },
@@ -652,7 +657,7 @@ export class SmsMasivos implements INodeType {
 
                     const options = {
                         method: 'GET' as const,
-                        url: 'http://servicio.smsmasivos.com.ar/obtener_respuestaapi_bloque.asp',
+                        url: 'https://servicio.smsmasivos.com.ar/obtener_respuestaapi_bloque.asp',
                         qs,
                         json: false, 
                         responseFormat: 'buffer',
@@ -748,7 +753,7 @@ export class SmsMasivos implements INodeType {
 
                     const options = {
                         method: 'GET' as const,
-                        url: 'http://servicio.smsmasivos.com.ar/enviar_sms.asp',
+                        url: 'https://servicio.smsmasivos.com.ar/enviar_sms.asp',
                         qs,
                         json: false,    // We will parse manually after decoding
                         responseFormat: 'buffer', // Return buffer to handle encoding manually
@@ -788,7 +793,12 @@ export class SmsMasivos implements INodeType {
                     }
 
 
-                    returnData.push({ json: finalData });
+                    returnData.push({
+                        json: finalData,
+                        pairedItem: {
+                            item: i,
+                        },
+                    });
                 }
             } catch (error) {
                 if (this.continueOnFail()) {

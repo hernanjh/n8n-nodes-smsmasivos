@@ -1,5 +1,7 @@
 # n8n-nodes-smsmasivos
 
+> **Disclaimer**: This is a community project and is **NOT** an official node provided by SMS Masivos.
+
 This is an n8n community node. It lets you use [SMS Masivos](https://smsmasivos.com.ar) in your n8n workflows.
 
 [n8n](https://n8n.io/) is a fair-code licensed workflow automation platform.

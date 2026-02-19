@@ -4,6 +4,7 @@ import {
     INodeExecutionData,
     INodeType,
     INodeTypeDescription,
+    NodeApiError,
 } from 'n8n-workflow';
 
 export class SmsMasivos implements INodeType {
@@ -495,7 +496,7 @@ export class SmsMasivos implements INodeType {
                 if (this.continueOnFail()) {
                     return [[{ json: { error: error.message } }]];
                 } else {
-                    throw error;
+                    throw new NodeApiError(this.getNode(), error);
                 }
             }
         }
@@ -570,7 +571,7 @@ export class SmsMasivos implements INodeType {
                 if (this.continueOnFail()) {
                     return [[{ json: { error: error.message } }]];
                 } else {
-                    throw error;
+                    throw new NodeApiError(this.getNode(), error);
                 }
             }
         }
@@ -709,10 +710,10 @@ export class SmsMasivos implements INodeType {
                     return [returnItems];
                 }
             } catch (error) {
-                 if (this.continueOnFail()) {
+                if (this.continueOnFail()) {
                     return [[{ json: { error: error.message } }]];
                 } else {
-                    throw error;
+                    throw new NodeApiError(this.getNode(), error);
                 }
             }
         }
@@ -804,7 +805,7 @@ export class SmsMasivos implements INodeType {
                 if (this.continueOnFail()) {
                     returnData.push({ json: { error: error.message } });
                 } else {
-                    throw error;
+                    throw new NodeApiError(this.getNode(), error);
                 }
             }
         }

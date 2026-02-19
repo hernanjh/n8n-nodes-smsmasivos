@@ -494,7 +494,12 @@ export class SmsMasivos implements INodeType {
 
             } catch (error) {
                 if (this.continueOnFail()) {
-                    return [[{ json: { error: error.message } }]];
+                    return [[{
+                        json: { error: error.message },
+                        pairedItem: {
+                            item: 0,
+                        },
+                    }]];
                 } else {
                     throw new NodeApiError(this.getNode(), error);
                 }
@@ -561,7 +566,12 @@ export class SmsMasivos implements INodeType {
                              item.idInterno = parts[4];
                          }
 
-                         returnItems.push({ json: item });
+                         returnItems.push({
+                             json: item,
+                             pairedItem: {
+                                 item: 0,
+                             },
+                         });
                     }
                 }
 
@@ -569,7 +579,12 @@ export class SmsMasivos implements INodeType {
 
             } catch (error) {
                 if (this.continueOnFail()) {
-                    return [[{ json: { error: error.message } }]];
+                    return [[{
+                        json: { error: error.message },
+                        pairedItem: {
+                            item: 0,
+                        },
+                    }]];
                 } else {
                     throw new NodeApiError(this.getNode(), error);
                 }
@@ -606,7 +621,10 @@ export class SmsMasivos implements INodeType {
                     return [[{
                         json: {
                             [resultMethod]: parseInt(response, 10),
-                        }
+                        },
+                        pairedItem: {
+                            item: 0,
+                        },
                     }]];
                 } else if (operation === 'getServerDate') {
                      const options = {
@@ -624,7 +642,10 @@ export class SmsMasivos implements INodeType {
                     return [[{
                         json: {
                             serverDate: response,
-                        }
+                        },
+                        pairedItem: {
+                            item: 0,
+                        },
                     }]];
                 } else if (operation === 'checkBulkStatus') {
                     const checkBy = this.getNodeParameter('checkBy', 0) as string;
@@ -680,7 +701,12 @@ export class SmsMasivos implements INodeType {
                     // Or Error message
 
                      if (responseString === 'PENDIENTE') {
-                         return [[{ json: { status: 'PENDIENTE' } }]];
+                         return [[{
+                             json: { status: 'PENDIENTE' },
+                             pairedItem: {
+                                 item: 0,
+                             },
+                         }]];
                      }
                     
                     const lines = responseString.split(/\r?\n/).filter(line => line.trim());
@@ -695,14 +721,20 @@ export class SmsMasivos implements INodeType {
                                      fecha: parts[1],
                                      respuesta: parts[2],
                                      originalLine: line
-                                 }
+                                 },
+                                 pairedItem: {
+                                     item: 0,
+                                 },
                              });
                         } else {
                             // Could be an error message or unexpected format
                              returnItems.push({
                                  json: {
                                      message: line
-                                 }
+                                 },
+                                 pairedItem: {
+                                     item: 0,
+                                 },
                              });
                         }
                     }
@@ -711,7 +743,12 @@ export class SmsMasivos implements INodeType {
                 }
             } catch (error) {
                 if (this.continueOnFail()) {
-                    return [[{ json: { error: error.message } }]];
+                    return [[{
+                        json: { error: error.message },
+                        pairedItem: {
+                            item: 0,
+                        },
+                    }]];
                 } else {
                     throw new NodeApiError(this.getNode(), error);
                 }
@@ -803,7 +840,12 @@ export class SmsMasivos implements INodeType {
                 }
             } catch (error) {
                 if (this.continueOnFail()) {
-                    returnData.push({ json: { error: error.message } });
+                    returnData.push({
+                        json: { error: error.message },
+                        pairedItem: {
+                            item: i,
+                        },
+                    });
                 } else {
                     throw new NodeApiError(this.getNode(), error);
                 }
